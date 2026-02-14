@@ -1,144 +1,178 @@
-**Overview**
+# Model Context Protocol (MCP) Learning Repository
 
-This is a minimal Example "Calculator" MCP (Model Context Protocol) server implemented with `fastmcp`. It exposes a couple of simple tools (functions) — `add_numbers` and `roll_dice` — that you can run locally, test, and debug.
+This repository is a hands-on MCP learning workspace built for education and revision.
+It contains one working MCP server (`Calculator MCP Server`) and one starter project (`Test Remote Server`) that can be expanded into a remote MCP service.
 
-**Prerequisites**
+## Learning Goals
 
-- **Python**: Python 3.11 or newer is required. Confirm with `python --version`.
-- **Network / Port access**: If you run the server on a publicly reachable interface, ensure the host/port are reachable and firewall rules allow access.
+- Understand how an MCP server is structured in Python.
+- Learn how tools are exposed to an MCP client (for example, Codex/Desktop clients).
+- Practice extending tool sets from simple math operations to real workflows.
+- Use this repo as quick revision material before interviews, demos, or project work.
 
-**Files of interest**
+## Repository Structure
 
-- `main.py`: The server implementation and entry point.
-- `pyproject.toml`: Project metadata and dependency (`fastmcp`).
-
-**Quick Start (Windows PowerShell)**
-
-- **Create a virtual environment** and activate it:
-
-```powershell
-python -m venv .venv
-; .\.venv\Scripts\Activate.ps1
+```text
+Model-Contex-Protocol/
+|-- README.md                         # This file (full repo guide)
+|-- image.png
+|-- Image_main.jpg
+|-- Calculator MCP Server/
+|   |-- main.py                       # FastMCP server and tool definitions
+|   |-- pyproject.toml                # Project metadata + dependencies
+|   |-- uv.lock                       # Resolved dependency lock file
+|   `-- README.md                     # Local project README
+`-- Test Remote Server/
+    |-- main.py                       # Starter script (currently non-MCP)
+    |-- pyproject.toml                # Minimal Python project config
+    `-- README.md                     # Remote server notes and expansion plan
 ```
 
-- **Install dependencies**:
+## What Is MCP (Quick Revision)
+
+Model Context Protocol (MCP) is a standard for connecting AI applications to external capabilities in a structured and safe way.
+
+In practical terms:
+
+- MCP Client: The AI app that wants to use external tools.
+- MCP Server: Your application that exposes tools/resources/prompts.
+- Transport Layer: How client and server communicate (local stdio or network/remote transport).
+- Tool Invocation: The client requests a named tool with arguments; server executes and returns structured results.
+
+## Architecture in This Repository
+
+```text
++---------------------------+
+| MCP Client (LLM App)      |
+| e.g., Codex/Desktop       |
++-------------+-------------+
+              |
+              | MCP request: tool name + arguments
+              v
++-------------+-------------+
+| FastMCP Server            |
+| Calculator MCP Server     |
+| (main.py)                 |
++-------------+-------------+
+              |
+              | Python function execution
+              v
++-------------+-------------+
+| Tools                      |
+| - roll_dice                |
+| - add_numbers              |
+| - subtract_numbers         |
+| - multiply_numbers         |
+| - divide_numbers           |
+| - modulus_numbers          |
++---------------------------+
+```
+
+## Current Implementation Summary
+
+### 1) Calculator MCP Server (`Calculator MCP Server/main.py`)
+
+This is the main MCP implementation.
+
+- Creates a `FastMCP` server instance named `DEMO Server`.
+- Registers tools using `@mcp.tool`.
+- Exposes arithmetic operations and a random dice tool.
+- Starts server with `mcp.run()` in the main entrypoint.
+
+Available tools:
+
+- `roll_dice(n_dice: int = 1) -> list[int]`
+- `add_numbers(a: float, b: float) -> float`
+- `subtract_numbers(a: float, b: float) -> float`
+- `multiply_numbers(a: float, b: float) -> float`
+- `divide_numbers(a: float, b: float) -> float` (raises `ValueError` for divide-by-zero)
+- `modulus_numbers(a: int, b: int) -> int`
+
+### 2) Test Remote Server (`Test Remote Server/main.py`)
+
+This is currently a starter script and prints:
+
+- `Hello from test-remote-server!`
+
+It is a good place to build your remote MCP experiments without affecting the calculator example.
+
+## Setup and Run
+
+Python requirement for both projects: `>=3.11`
+
+### Option A: Run Calculator MCP Server
 
 ```powershell
+cd "Calculator MCP Server"
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install fastmcp
-# or install the project in editable mode (if you want to import it):
-python -m pip install -e .
+python main.py
 ```
 
-- **Run the server**:
+### Option B: Run Starter Remote Server
 
 ```powershell
-python "Calculator MCP Server\main.py"
+cd "Test Remote Server"
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python main.py
 ```
 
-This starts the MCP server using the default settings in `main.py`. If you want the server to listen on a specific host or port, edit `main.py` to pass arguments to `mcp.run(host=..., port=...)`.
+## MCP Use Cases (Relevant to This Repo)
 
-**Testing the functions locally (fast turnaround)**
+Use this calculator server pattern as a template for:
 
-- You can unit-test the tools without starting the MCP server by importing them directly from `main.py`:
+- Data preprocessing tools for ML workflows.
+- Statistical utility tools (mean/std/normalization checks).
+- Feature engineering helpers exposed as MCP tools.
+- Internal operations assistant (validated business calculations).
+- Educational sandboxes to teach AI tool-calling.
 
-```powershell
-python - <<'PY'
-from Calculator_MCP_Server import main as server_main
-from importlib import import_module
-mod = import_module('Calculator MCP Server.main')
-print(mod.add_numbers(1.5, 2.25))
-print(mod.roll_dice(3))
-PY
-```
+## Concepts to Revise from This Codebase
 
-Note: If you prefer a simple Python REPL test:
+1. Tool registration via decorators (`@mcp.tool`).
+2. Typed signatures and automatic schema generation.
+3. Deterministic tools (`add_numbers`) vs non-deterministic tools (`roll_dice`).
+4. Error handling and tool safety (`divide_numbers`).
+5. Separation of concern: MCP wiring vs business logic.
+6. Local-first development before remote deployment.
 
-```powershell
-python
->>> from importlib import import_module
->>> mod = import_module('Calculator MCP Server.main')
->>> mod.add_numbers(1,2)
->>> mod.roll_dice(2)
-```
+## Suggested Next Improvements
 
-**Debugging**
+1. Add input validation for all math tools (ranges, type guards).
+2. Add unit tests for each tool function.
+3. Add logging and structured error responses.
+4. Convert `Test Remote Server` into a real remote MCP server.
+5. Add resources/prompts support (not only tools) for broader MCP learning.
 
-- **Enable Python logging**: Add log setup near the top of `main.py` before calling `mcp.run()` to see detailed runtime information:
+## Example Extension Path (Remote MCP)
 
-```python
-import logging
-logging.basicConfig(level=logging.DEBUG)
+To convert `Test Remote Server` into a remote MCP service:
 
-# ... existing code ...
-if __name__ == '__main__':
-		mcp.run()
-```
+1. Initialize a `FastMCP` instance.
+2. Define at least one `@mcp.tool` function.
+3. Configure run mode for remote transport.
+4. Add auth, request limits, and logging.
+5. Test using an MCP-capable client.
 
-- **Run with an environment variable (PowerShell)** to mark intent or pass options to your startup scripts:
+## Troubleshooting Notes
 
-```powershell
-$env:LOG_LEVEL = 'DEBUG'; python "Calculator MCP Server\main.py"
-```
+- `ModuleNotFoundError: fastmcp`: install dependency in active virtual environment.
+- Wrong Python version: confirm `python --version` is 3.11+.
+- Tool errors: check function signatures and edge cases (for example divide by zero).
 
-- **Use VS Code debugging**: Create or update `.vscode/launch.json` with a configuration similar to the following (place in workspace root):
+## Revision Checklist
 
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Python: Launch Calculator MCP",
-      "type": "python",
-      "request": "launch",
-      "program": "${workspaceFolder}/Calculator MCP Server/main.py",
-      "console": "integratedTerminal",
-      "justMyCode": false
-    }
-  ]
-}
-```
+Use this before interviews or practical sessions:
 
-- **Breakpoints & inspection**: Set breakpoints inside `add_numbers` or `roll_dice` and run the VS Code launch configuration. The `justMyCode: false` option ensures library calls are also viewable if needed.
-
-**Collecting logs for troubleshooting**
-
-- Run the server with logging enabled (see above) and capture console output.
-- To write logs to a file, configure `logging` in `main.py`:
-
-```python
-import logging
-logging.basicConfig(level=logging.DEBUG, filename='mcp-server.log', filemode='a', format='%(asctime)s %(levelname)s %(message)s')
-```
-
-Then reproduce the issue and attach `mcp-server.log` when requesting help.
-
-**Common issues & fixes**
-
-- **Wrong Python version**: Confirm `python --version` is 3.11+ and your virtual environment is active.
-- **Dependency not installed**: If you see `ModuleNotFoundError: fastmcp`, run `python -m pip install fastmcp` in the active venv.
-- **Port already in use**: If the server fails to start due to address-in-use, change the port in `mcp.run(port=XXXX)` in `main.py` or stop the conflicting process.
-- **Code changes not reflected**: If you installed the package into the environment using `pip install .` (not editable), re-install with `pip install -e .` or run `python main.py` directly for active development.
-
-**Development tips**
-
-- Keep `main.py` small — use separate modules to host business logic and keep `main.py` responsible only for wiring the MCP and registering tools.
-- Add unit tests that import the functions directly rather than exercising the network layer. This makes iteration faster.
-
-**How to get help**
-
-- When reporting a problem, include:
-  - Python version (`python --version`)
-  - Exact commands run
-  - Full console output or `mcp-server.log` if available
-  - A minimal reproduction snippet if possible
+- Explain MCP client-server flow in 30 seconds.
+- Describe how `@mcp.tool` exposes Python functions.
+- Discuss one safety concern and one mitigation.
+- Extend one tool and test it locally.
+- Explain how local MCP differs from remote MCP deployment.
 
 ---
 
-If you want, I can also:
-
-- add a ready-to-use `.vscode/launch.json` to the repo,
-- add a `requirements.txt` or `tox`/`pytest` scaffolding for tests, or
-- add a simple client example that calls this MCP server.
-
-Please tell me which of those you'd like next.
+If you want, the next step can be adding a production-style remote MCP server in `Test Remote Server` with authentication, logging, and a few ML-oriented tools.
